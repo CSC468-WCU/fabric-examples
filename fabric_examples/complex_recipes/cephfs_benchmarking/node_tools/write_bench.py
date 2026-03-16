@@ -223,38 +223,37 @@ def main() -> int:
             "os": f"{uname.system} {uname.version}",
         })
 
+    def _run_and_cleanup(dst: Path, bench_fn, target, fstype, method_name):
+        """Run a single benchmark, record the result, and immediately remove the dst file."""
+        out = bench_fn(src_file, dst)
+        if out is not None:
+            rate, el = out if isinstance(out, tuple) else (out, None)
+            record(target, fstype, method_name, rate, el, size_bytes)
+        if not args.keep_files:
+            try:
+                dst.unlink(missing_ok=True)
+            except Exception:
+                pass
+
     def run_suite(target: str, base_dir: Path, fstype: str) -> None:
         """
         Run all selected methods writing into 'base_dir'.
+        Each destination file is removed immediately after its benchmark
+        so that only one test file exists at a time on the volume.
         """
         dst_base = base_dir / f"bench_dst_{stamp}"
-        # Run benchmarks
+
         if "python" in methods:
-            rate, el = bench_python_copy(src_file, dst_base.with_suffix(".py"))
-            record(target, fstype, "python", rate, el, size_bytes)
+            _run_and_cleanup(dst_base.with_suffix(".py"), bench_python_copy, target, fstype, "python")
 
         if "rsync" in methods:
-            out = bench_rsync(src_file, dst_base.with_suffix(".rsync"))
-            if out:
-                record(target, fstype, "rsync", out[0], out[1], size_bytes)
+            _run_and_cleanup(dst_base.with_suffix(".rsync"), bench_rsync, target, fstype, "rsync")
 
         if "dd" in methods:
-            out = bench_dd(src_file, dst_base.with_suffix(".dd"))
-            if out:
-                record(target, fstype, "dd", out[0], out[1], size_bytes)
+            _run_and_cleanup(dst_base.with_suffix(".dd"), bench_dd, target, fstype, "dd")
 
         if "pv" in methods:
-            out = bench_pv(src_file, dst_base.with_suffix(".pv"))
-            if out:
-                record(target, fstype, "pv|dd", out[0], out[1], size_bytes)
-
-        # Cleanup destination test files unless kept
-        if not args.keep_files:
-            for suffix in [".py", ".rsync", ".dd", ".pv"]:
-                try:
-                    (dst_base.with_suffix(suffix)).unlink(missing_ok=True)
-                except Exception:
-                    pass
+            _run_and_cleanup(dst_base.with_suffix(".pv"), bench_pv, target, fstype, "pv|dd")
 
     # Run on CephFS
     run_suite("cephfs", ceph_dest_dir, ceph_fstype)
