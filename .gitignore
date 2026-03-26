@@ -1,5 +1,7 @@
-# Prevent value of id_token.json to be changed
-.cert/id_token.json
+# Prevent value of customized Dockerfile to be changed
+docker-compose.yml
+
+# 
 
 pypi-token
 # Byte-compiled / optimized / DLL files

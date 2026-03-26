@@ -1,0 +1,20 @@
+services:
+  fabric-jupyter:
+    build:
+      context: .
+      dockerfile: .docker/Dockerfile
+      args:
+        FABRIC_PROJECT_ID: "REPLACE_WITH_PROJECT_UUID"
+        FABRIC_BASTION_USERNAME: "REPLACE_WITH_BASTION_USERNAME"
+    image: fabric-jupyter:local
+    container_name: fabric-jupyter
+    working_dir: /app
+    ports:
+      - "8888:8888"
+      - "3000:3000"
+      - "4000:4000"
+      - "8080:8080"
+    volumes:
+      - .:/app
+    stdin_open: true
+    tty: true
