@@ -36,7 +36,7 @@ RUN python -m pip install --user --upgrade pip && \
 
 RUN echo 'if [ -f "$HOME/.fabric/fabric_rc" ]; then . "$HOME/.fabric/fabric_rc"; fi' >> "$HOME/.bashrc"
 
-EXPOSE 8888 3000 4000 8080 5555
+EXPOSE 8888 3000 4000 5555
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
 
