@@ -11,3 +11,5 @@ export FABRIC_BASTION_KEY_LOCATION=$HOME/.ssh/fabric-bastion-key
 
 export FABRIC_SLICE_PRIVATE_KEY_FILE=$HOME/.ssh/slice_key
 export FABRIC_SLICE_PUBLIC_KEY_FILE=$HOME/.ssh/slice_key.pub
+
+export SHELL=/bin/bash
