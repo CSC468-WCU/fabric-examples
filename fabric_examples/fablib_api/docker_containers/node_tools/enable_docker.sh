@@ -2,6 +2,8 @@
 
 image=$1
 
+sudo echo "$(pwd)" >> /tmp/test_path
+
 script_dir="$(cd "$(dirname "$0")" && pwd)"
 
 if ping6 -c 1 google.com &> /dev/null; then
