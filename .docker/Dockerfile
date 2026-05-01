@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     sudo \
     openssh-client \
     git \
+    ansible \
     curl \
     ca-certificates \
     bash-completion \
