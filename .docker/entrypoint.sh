@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
 
-chmod 744 $HOME/.fabric/
-chmod 744 $HOME/.ssh/
+sudo chown -R fabric:fabric $HOME/.fabric/ $HOME/.ssh/
+sudo chmod 744 $HOME/.fabric/
+sudo chmod 744 $HOME/.ssh/
 
-chmod 600 $HOME/.fabric/fabric_rc
+sudo chmod 600 $HOME/.fabric/fabric_rc
 
-chmod 600 $HOME/.ssh/slice_key
-chmod 644 $HOME/.ssh/slice_key.pub
+sudo chmod 600 $HOME/.ssh/slice_key
+sudo chmod 644 $HOME/.ssh/slice_key.pub
 
-chmod 600 $HOME/.ssh/fabric-bastion-key
-chmod 644 $HOME/.ssh/fabric-bastion-key.pub
+sudo chmod 600 $HOME/.ssh/fabric-bastion-key
+sudo chmod 644 $HOME/.ssh/fabric-bastion-key.pub
 
 source $HOME/.fabric/fabric_rc
 
