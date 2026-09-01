@@ -1,0 +1,205 @@
+---
+# Install RKE2 (Rancher Kubernetes Engine 2).
+# Follows https://docs.rke2.io/install/quickstart using the dataplane IPs
+# so cluster traffic stays on the FABRIC L2 network.
+
+- name: Bootstrap RKE2 server (control plane)
+  hosts: rke2_servers
+  become: true
+  tasks:
+    - name: Ensure RKE2 config directory exists
+      ansible.builtin.file:
+        path: /etc/rancher/rke2
+        state: directory
+        mode: "0755"
+
+    - name: Write RKE2 server config (advertise on private dataplane IP)
+      ansible.builtin.copy:
+        dest: /etc/rancher/rke2/config.yaml
+        mode: "0600"
+        content: |
+          token: "{{ rke2_token }}"
+          node-ip: "{{ private_ip }}"
+          advertise-address: "{{ private_ip }}"
+          tls-san:
+            - "{{ private_ip }}"
+            - "{{ inventory_hostname }}"
+            - "127.0.0.1"
+
+    - name: Install RKE2 server
+      ansible.builtin.shell: curl -sfL https://get.rke2.io | sh -
+      args:
+        creates: /usr/local/bin/rke2
+        executable: /bin/bash
+
+    - name: Enable and start rke2-server
+      ansible.builtin.systemd:
+        name: rke2-server
+        enabled: true
+        state: started
+        daemon_reload: true
+
+    - name: Wait for node-token file
+      ansible.builtin.wait_for:
+        path: /var/lib/rancher/rke2/server/node-token
+        timeout: 300
+
+    - name: Wait for Kubernetes API to become ready
+      ansible.builtin.command: >
+        /var/lib/rancher/rke2/bin/kubectl
+        --kubeconfig /etc/rancher/rke2/rke2.yaml
+        get nodes
+      register: api_ready
+      retries: 30
+      delay: 10
+      until: api_ready.rc == 0
+      changed_when: false
+
+    - name: Symlink kubectl onto PATH
+      ansible.builtin.file:
+        src: /var/lib/rancher/rke2/bin/kubectl
+        dest: /usr/local/bin/kubectl
+        state: link
+
+    - name: Create kubeconfig directory for the ubuntu user
+      ansible.builtin.file:
+        path: "/home/{{ ansible_user }}/.kube"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0755"
+
+    - name: Install kubeconfig for the ubuntu user
+      ansible.builtin.copy:
+        src: /etc/rancher/rke2/rke2.yaml
+        dest: "/home/{{ ansible_user }}/.kube/config"
+        remote_src: true
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0600"
+
+    - name: Publish join info for agent play
+      ansible.builtin.add_host:
+        name: rke2_bootstrap
+        server_url: "https://{{ private_ip }}:9345"
+        cluster_token: "{{ rke2_token }}"
+
+
+- name: Join RKE2 agent (worker) nodes
+  hosts: rke2_agents
+  become: true
+  tasks:
+    - name: Ensure RKE2 config directory exists
+      ansible.builtin.file:
+        path: /etc/rancher/rke2
+        state: directory
+        mode: "0755"
+
+    - name: Write RKE2 agent config
+      ansible.builtin.copy:
+        dest: /etc/rancher/rke2/config.yaml
+        mode: "0600"
+        content: |
+          server: "{{ hostvars['rke2_bootstrap']['server_url'] }}"
+          token: "{{ hostvars['rke2_bootstrap']['cluster_token'] }}"
+          node-ip: "{{ private_ip }}"
+
+    - name: Install RKE2 agent
+      ansible.builtin.shell: curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE="agent" sh -
+      args:
+        creates: /usr/local/bin/rke2
+        executable: /bin/bash
+      environment:
+        INSTALL_RKE2_TYPE: agent
+
+    - name: Enable and start rke2-agent
+      ansible.builtin.systemd:
+        name: rke2-agent
+        enabled: true
+        state: started
+        daemon_reload: true
+
+
+- name: Verify cluster and deploy a demo workload
+  hosts: rke2_servers
+  become: true
+  tasks:
+    - name: Wait until both nodes are Ready
+      ansible.builtin.shell: |
+        count=$(/var/lib/rancher/rke2/bin/kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml get nodes --no-headers 2>/dev/null | grep -c ' Ready' || true)
+        echo "${count:-0}"
+      register: ready_nodes
+      retries: 36
+      delay: 10
+      until: (ready_nodes.stdout | trim | int) >= (groups['rke2_servers'] | length + groups['rke2_agents'] | length)
+      changed_when: false
+
+    - name: Show cluster nodes
+      ansible.builtin.command: >
+        /var/lib/rancher/rke2/bin/kubectl
+        --kubeconfig /etc/rancher/rke2/rke2.yaml
+        get nodes -o wide
+      register: nodes_out
+      changed_when: false
+
+    - name: Print node list
+      ansible.builtin.debug:
+        var: nodes_out.stdout_lines
+
+    - name: Deploy demo nginx Deployment + Service
+      ansible.builtin.shell: |
+        /var/lib/rancher/rke2/bin/kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml apply -f - <<'EOF'
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: nginx-demo
+        spec:
+          replicas: 2
+          selector:
+            matchLabels:
+              app: nginx-demo
+          template:
+            metadata:
+              labels:
+                app: nginx-demo
+            spec:
+              containers:
+                - name: nginx
+                  image: nginx:alpine
+                  ports:
+                    - containerPort: 80
+        ---
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: nginx-demo
+        spec:
+          type: NodePort
+          selector:
+            app: nginx-demo
+          ports:
+            - port: 80
+              targetPort: 80
+              nodePort: 30080
+        EOF
+      args:
+        executable: /bin/bash
+      register: demo_apply
+      changed_when: "'created' in demo_apply.stdout or 'configured' in demo_apply.stdout"
+
+    - name: Wait for nginx-demo pods to be Ready
+      ansible.builtin.command: >
+        /var/lib/rancher/rke2/bin/kubectl
+        --kubeconfig /etc/rancher/rke2/rke2.yaml
+        rollout status deployment/nginx-demo --timeout=180s
+      changed_when: false
+
+    - name: Show demo pods and service
+      ansible.builtin.shell: |
+        /var/lib/rancher/rke2/bin/kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml get pods,svc -l app=nginx-demo -o wide
+      register: demo_out
+      changed_when: false
+
+    - name: Print demo workload status
+      ansible.builtin.debug:
+        var: demo_out.stdout_lines
