@@ -1,4 +1,3 @@
-# Placeholder inventory. The notebook regenerates this from the live FABRIC slice.
 all:
   vars:
     ansible_become: true
@@ -11,7 +10,7 @@ all:
     rke2_servers:
       hosts:
         node1:
-          ansible_host: "REPLACE_WITH_NODE1_MGMT_IP"
+          ansible_host: "2001:400:a100:3010:f816:3eff:fefc:a93c"
           ansible_user: "ubuntu"
           ansible_python_interpreter: "/usr/bin/python3"
           private_ip: "192.168.1.1"
@@ -19,7 +18,8 @@ all:
     rke2_agents:
       hosts:
         node2:
-          ansible_host: "REPLACE_WITH_NODE2_MGMT_IP"
+          ansible_host: "2001:400:a100:3010:f816:3eff:fed8:4899"
           ansible_user: "ubuntu"
           ansible_python_interpreter: "/usr/bin/python3"
           private_ip: "192.168.1.2"
+
