@@ -10,7 +10,7 @@ all:
     rke2_servers:
       hosts:
         node1:
-          ansible_host: "2001:400:a100:3010:f816:3eff:fefc:a93c"
+          ansible_host: "2605:2800:2011:201:f816:3eff:fec8:af65"
           ansible_user: "ubuntu"
           ansible_python_interpreter: "/usr/bin/python3"
           private_ip: "192.168.1.1"
@@ -18,7 +18,7 @@ all:
     rke2_agents:
       hosts:
         node2:
-          ansible_host: "2001:400:a100:3010:f816:3eff:fed8:4899"
+          ansible_host: "2605:2800:2011:201:f816:3eff:feea:20c7"
           ansible_user: "ubuntu"
           ansible_python_interpreter: "/usr/bin/python3"
           private_ip: "192.168.1.2"
