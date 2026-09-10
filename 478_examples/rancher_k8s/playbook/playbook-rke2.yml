@@ -354,3 +354,13 @@
     - name: Print demo workload status
       ansible.builtin.debug:
         var: demo_out.stdout_lines
+
+    - name: Show expected 200 returned value for curl
+      ansible.builtin.shell: |
+        curl -s -o /dev/null -w '%{http_code}\n' http://192.168.1.1:30080/
+      register: curl_out
+      changed_when: false
+
+    - name: Print curl status
+      ansible.builtin.debug:
+        var: curl_out.stdout_lines
