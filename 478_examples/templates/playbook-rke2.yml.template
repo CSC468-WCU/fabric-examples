@@ -143,9 +143,9 @@
                   - "--kube-subnet-mgr"
                   - "--iptables-forward-rules=false"
                   - "--ip-blackhole-route"
-                  - "--iface-can-reach=192.168.1.254"
+                  - "--iface-can-reach=__DATAPLANE_GATEWAY__"
               calico:
-                ipAutoDetectionMethod: "can-reach=192.168.1.254"
+                ipAutoDetectionMethod: "can-reach=__DATAPLANE_GATEWAY__"
 
     - name: Enable and start rke2-server
       ansible.builtin.systemd:
@@ -357,7 +357,7 @@
 
     - name: Show expected 200 returned value for curl
       ansible.builtin.shell: |
-        curl -s -o /dev/null -w '%{http_code}\n' http://192.168.1.1:30080/
+        curl -s -o /dev/null -w '%{http_code}\n' http://__RKE2_SERVER_PRIVATE_IP__:30080/
       register: curl_out
       changed_when: false
 
