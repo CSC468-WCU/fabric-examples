@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     bash-completion \
     tini \
+    gh \
     && rm -rf /var/lib/apt/lists/*
 
 # Create fabric user with passwordless sudo
