@@ -236,9 +236,9 @@
       environment:
         INSTALL_RKE2_TYPE: agent
       register: _rke2_agent_install
-        until: _rke2_agent_install is succeeded
-        retries: 3
-        delay: 10
+      until: _rke2_agent_install is succeeded
+      retries: 3
+      delay: 10
 
     - name: Enable and start rke2-agent
       ansible.builtin.systemd:
