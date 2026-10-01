@@ -9,8 +9,7 @@ DEFAULT_PLAYBOOK_DIR = _REPO_ROOT / "478_examples" / "playbook"
 DEFAULT_SSH_CONFIG = "/home/fabric/work/fabric_config/ssh_config"
 DEFAULT_RKE2_TOKEN = "fabric-rke2-cluster-token"
 DEFAULT_DATAPLANE_GATEWAY = "192.168.1.254"
-DEFAULT_PLAYBOOKS = ("playbook-rke2.yml")
-
+DEFAULT_PLAYBOOKS = ["playbook-rke2.yml"]
 
 def fill_template(name, templates_dir=None, **replacements):
     """Replace ``__KEY__`` placeholders in a template file and return the text."""
@@ -19,7 +18,6 @@ def fill_template(name, templates_dir=None, **replacements):
     for key, value in replacements.items():
         text = text.replace(f"__{key}__", str(value))
     return text
-
 
 def _host_yaml(nd, templates_dir):
     node = nd["node"]

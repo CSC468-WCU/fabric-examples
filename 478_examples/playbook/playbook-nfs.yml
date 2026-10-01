@@ -26,6 +26,14 @@
         group: root
         mode: "0777"
 
+    - name: Create NFS exports directory
+      ansible.builtin.file:
+        path: /etc/exports.d
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
     - name: Configure NFS export
       ansible.builtin.copy:
         dest: /etc/exports.d/rke2-data.exports
